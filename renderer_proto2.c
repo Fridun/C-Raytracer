@@ -1,5 +1,6 @@
 //gcc renderertest.c -o test -lm
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 
@@ -120,12 +121,23 @@ void main(){
 	S2.values[6] = 0;	//green
 	S2.values[7] = 128;	//blue
 	
+	object S3; //sphere 1
+	S3.values[0] = 1; 	//shape
+	S3.values[1] = -4; 	//posx
+	S3.values[2] = -3;	//posy
+	S3.values[3] = 8;	//posz
+	S3.values[4] = 2;	//radius
+	S3.values[5] = 0;	//red
+	S3.values[6] = 128;	//green
+	S3.values[7] = 0;	//blue
+	
 	//++++++++++++++++++++++++++++ Here add objects to objlist and set objcount to the mount of objects ++++++++++++++++++++++++++++
 	object objlist[5];
-	int objcount = 2;
+	int objcount = 3;
 	
 	objlist[0] = S1;
 	objlist[1] = S2;
+	objlist[2] = S3;
 	
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
@@ -135,13 +147,13 @@ void main(){
 	Camera1.Winy = 1;
 
 	struct window window1;
-	window1.resx = 200;
-	window1.resy = 200;
+	window1.resx = 1000;
+	window1.resy = 1000;
 	window1.colors = 255;
 
 	int background = 255;
 	
-	int framebuffer[(window1.resx * window1.resy)][3];
+	int (*framebuffer)[3] = malloc(window1.resx * window1.resy * 3 * sizeof(int));
 	
 	
 	float ray[3];
