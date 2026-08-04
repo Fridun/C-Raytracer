@@ -10,7 +10,12 @@ typedef struct object{
 	float values[10];
 } object;
 
-typedef struct light{float values[8];} light; //shape, xyzpos, rgb, intensity, ...(no space with current mem)
+typedef struct light{
+	float pos[3];
+	float color[3];
+	int intensity;
+	
+	} light; //maybe add shape at some point? idk
 	
 typedef struct Camera{
 	int Winx;
@@ -31,27 +36,53 @@ typedef struct collision{int hit; float time; int target; } collision;
 float float_dotP(float vec1[], float vec2[]){return ((vec1[0] * vec2[0]) + (vec1[1] * vec2[1]) + (vec1[2] * vec2[2]));}
 
 //++++
+void vecminus(float vec1[], float vec2[], float vecfinal[]){
+	vecfinal[0] = vec1[0] - vec2[0];
+	vecfinal[1] = vec1[1] - vec2[1];
+	vecfinal[2] = vec1[2] - vec2[2];
+}
+	
+//+++
 
-collision check_sphere(float ray[],object sphere, int Nobj){
+void normalize(float vec[]){		
+	float length = sqrt((SQ(vec[0])+SQ(vec[1])+SQ(vec[2])));
+	vec[0] = (vec[0]/length);
+	vec[1] = (vec[1]/length);
+	vec[2] = (vec[2]/length);
+}
+
+//++++++++++++
+
+collision check_sphere(float ray[],object sphere, int Nobj, float origin[]){
 	collision collide;
 	collide.target = Nobj;
 	
-	float a = (SQ(ray[0])+SQ(ray[1])+SQ(ray[2]));
+	float a = float_dotP(ray, ray); 
+	
 	float pos[3] = {sphere.values[1],sphere.values[2],sphere.values[3]};
-	float b = (-2 * (float_dotP(pos, ray)));
-	float c = (SQ(pos[0]) + SQ(pos[1]) + SQ(pos[2]) - SQ(sphere.values[4]));
+	float oripos[3];
+	vecminus(origin, pos, oripos);
+	float b = (2 * (float_dotP(oripos, ray)));
+	//float c = ((-2*float_dotP(origin, pos)) + float_dotP(origin, origin) + float_dotP(pos, pos) - SQ(sphere.values[4])); equivalent to current
+	float c = float_dotP(oripos, oripos) - SQ(sphere.values[4]);
 	
 	if ((SQ(b) - (4*a*c)) < 0){ collide.hit = 0; return collide;}
+	
 	float T1 = ((-(b) + sqrtf(SQ(b) - (4*a*c))) / (2*a));
 	float T2 = ((-(b) - sqrtf(SQ(b) - (4*a*c))) / (2*a));
+	
+	
 	if (T1<0 && T2<0){collide.hit = 0;} 
 	else if (T1<0 || T2<0){collide.hit = 1; collide.time = (fmaxf(T1,T2));} 
 	else {collide.hit = 1; collide.time = (fminf(T1,T2));} 
-	return (collide); }
+	
+	
+	return (collide); 
+	}
 
 //++++
 
-collision checkray(float ray[], object objlist[], int objcount){
+collision checkray(float ray[], object objlist[], int objcount, float origin[]){
 	collision finalhit;
 	collision checkhit;
 
@@ -61,7 +92,7 @@ collision checkray(float ray[], object objlist[], int objcount){
 		switch (shape){
 		
 			case 1:
-			checkhit = check_sphere(ray, objlist[n], n);
+			checkhit = check_sphere(ray, objlist[n], n, origin);
 			
 		
 		if (n==0){finalhit = checkhit;}
@@ -77,6 +108,33 @@ collision checkray(float ray[], object objlist[], int objcount){
 	}
 	
 //++++
+
+void surfacenormalize (object target, float hitpoint[], float finalvec[]) {
+	float vector[3] = {(hitpoint[0] - target.values[1]), (hitpoint[1] - target.values[2]), (hitpoint[2] - target.values[3])};
+	normalize(vector);
+	
+	finalvec[0] = vector[0];
+	finalvec[1] = vector[1];
+	finalvec[2] = vector[2];
+}
+
+//++++++++++++++++++++++++++++++++++
+
+//float lighting(object target, float hitpoint[], light lightlist[], int lightcount)  {
+//	float surfacenormal[3];
+//	
+//	surfacenormalize(target, hitpoint[3], surfacenormal[3]);
+//	
+//	for (int n=0; n<lightcount; n++){
+//		float lightray[3] = {lightlist[n].pos[0] - hitpoint[0], lightlist[n].pos[1] - hitpoint[1], lightlist[n].pos[2] - hitpoint[2]};
+//		normalize(lightray);
+	
+	
+	
+//}
+
+
+//++++++++++++++++++++++
 	
 void writeimage(int resx, int resy, int colors, int frame[][3]){
 	FILE *im;
@@ -133,13 +191,13 @@ void main(){
 	
 	object S4; //sphere 4
 	S4.values[0] = 1; 	//shape
-	S4.values[1] = -5; 	//posx
-	S4.values[2] = 1;	//posy
-	S4.values[3] = 20;	//posz
+	S4.values[1] = -15; 	//posx
+	S4.values[2] = 10;	//posy
+	S4.values[3] = 50;	//posz
 	S4.values[4] = 3;	//radius
-	S4.values[5] = 0;	//red
+	S4.values[5] = 64;	//red
 	S4.values[6] = 0;	//green
-	S4.values[7] = 0;	//blue
+	S4.values[7] = 128;	//blue
 	
 	//++++++++++++++++++++++++++++ Here add objects to objlist and set objcount to the mount of objects ++++++++++++++++++++++++++++
 	object objlist[5];
@@ -174,13 +232,10 @@ void main(){
 		ray[1] = ((0.5 * Camera1.Winy) - ((float)Camera1.Winy / (window1.resy-1)) * (l/window1.resx));
 		ray[0] = ((-0.5 * Camera1.Winx) + (((float)Camera1.Winx / (window1.resx-1)) * (l - (window1.resx * (l/window1.resx)))));
 		
-		float length = sqrt((SQ(ray[0])+SQ(ray[1])+SQ(ray[2])));
-		ray[0] = (ray[0]/length);
-		ray[1] = (ray[1]/length);
-		ray[2] = (ray[2]/length);
+		normalize(ray);
 		
-		
-		hit = checkray(ray, objlist, objcount);
+		float origin[3] = {0,0,0};
+		hit = checkray(ray, objlist, objcount,origin);
 		
 		if (hit.hit == 1){ framebuffer[l][0] = objlist[hit.target].values[5]; framebuffer[l][1] = objlist[hit.target].values[6]; framebuffer[l][2] = objlist[hit.target].values[7]; }
 		else{ for(int bac = 0; bac <= 2; bac++){ framebuffer[l][bac] = background; }}
