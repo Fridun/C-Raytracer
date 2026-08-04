@@ -111,7 +111,7 @@ void main(){
 	S1.values[6] = 0;	//green
 	S1.values[7] = 0;	//blue
 	
-	object S2; //sphere 1
+	object S2; //sphere 2
 	S2.values[0] = 1; 	//shape
 	S2.values[1] = 4; 	//posx
 	S2.values[2] = 2;	//posy
@@ -121,7 +121,7 @@ void main(){
 	S2.values[6] = 0;	//green
 	S2.values[7] = 128;	//blue
 	
-	object S3; //sphere 1
+	object S3; //sphere 3
 	S3.values[0] = 1; 	//shape
 	S3.values[1] = -4; 	//posx
 	S3.values[2] = -3;	//posy
@@ -131,13 +131,24 @@ void main(){
 	S3.values[6] = 128;	//green
 	S3.values[7] = 0;	//blue
 	
+	object S4; //sphere 4
+	S4.values[0] = 1; 	//shape
+	S4.values[1] = -5; 	//posx
+	S4.values[2] = 1;	//posy
+	S4.values[3] = 20;	//posz
+	S4.values[4] = 3;	//radius
+	S4.values[5] = 0;	//red
+	S4.values[6] = 0;	//green
+	S4.values[7] = 0;	//blue
+	
 	//++++++++++++++++++++++++++++ Here add objects to objlist and set objcount to the mount of objects ++++++++++++++++++++++++++++
 	object objlist[5];
-	int objcount = 3;
+	int objcount = 4;
 	
 	objlist[0] = S1;
 	objlist[1] = S2;
 	objlist[2] = S3;
+	objlist[3] = S4;
 	
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
@@ -177,5 +188,5 @@ void main(){
 	
 	writeimage(window1.resx, window1.resy, window1.colors, framebuffer);
 	
-
+	free(framebuffer);
 }
