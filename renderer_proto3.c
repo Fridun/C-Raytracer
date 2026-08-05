@@ -67,7 +67,10 @@ void veccopy(float copier[], float copied[]){
 	copier[2] = copied[2];
 }
 
-float vecmagnitude(float vec[]){ sqrt((SQ(vec[0])+SQ(vec[1])+SQ(vec[2]))); }
+float vecmagnitude(float vec[]){ 
+	float magnitude = sqrt((SQ(vec[0])+SQ(vec[1])+SQ(vec[2])));
+	return magnitude;
+	}
 	
 //++++++++++++
 
@@ -178,8 +181,10 @@ float lighting(object target, float hitpoint[], light lightlist[], int n, object
 		lightvision = checkray(lightray, objlist, objcount, raystart);
 		
 		if (lightvision.hit == 1){
-			
+			//printf("hit\n");
 			float lightdistance = vecmagnitude(fulllightray);
+			//printf("lightdistance: %f\n", lightdistance);
+			//printf("light time: %f\n", lightvision.time);
 			if (lightdistance > lightvision.time){lightfactor = 0;}
 	}
 				
@@ -269,9 +274,9 @@ void main(){
 	//++++++++++++++++++++++++++++++++++++++create light sources++++++++++++++++++++++++++++++++
 	
 	light L1;
-	L1.pos[0] = 4;
-	L1.pos[1] = 5;
-	L1.pos[2] = 5;
+	L1.pos[0] = -1;
+	L1.pos[1] = 0;
+	L1.pos[2] = 7;
 	
 	
 	
