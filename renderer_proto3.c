@@ -42,15 +42,33 @@ void vecminus(float vec1[], float vec2[], float vecfinal[]){
 	vecfinal[2] = vec1[2] - vec2[2];
 }
 	
-//+++
+void vecplus(float vec1[], float vec2[], float vecfinal[]){
+	vecfinal[0] = vec1[0] + vec2[0];
+	vecfinal[1] = vec1[1] + vec2[1];
+	vecfinal[2] = vec1[2] + vec2[2];
+}
 
-void normalize(float vec[]){		
+void vecscale(float scalar, float vec[]){
+	vec[0] = vec[0] * scalar;
+	vec[1] = vec[1] * scalar;
+	vec[2] = vec[2] * scalar;
+}
+
+void vecnormalize(float vec[]){		
 	float length = sqrt((SQ(vec[0])+SQ(vec[1])+SQ(vec[2])));
 	vec[0] = (vec[0]/length);
 	vec[1] = (vec[1]/length);
 	vec[2] = (vec[2]/length);
 }
 
+void veccopy(float copier[], float copied[]){
+	copier[0] = copied[0];
+	copier[1] = copied[1];
+	copier[2] = copied[2];
+}
+
+float vecmagnitude(float vec[]){ sqrt((SQ(vec[0])+SQ(vec[1])+SQ(vec[2]))); }
+	
 //++++++++++++
 
 collision check_sphere(float ray[],object sphere, int Nobj, float origin[]){
@@ -80,7 +98,7 @@ collision check_sphere(float ray[],object sphere, int Nobj, float origin[]){
 	return (collide); 
 	}
 
-//++++
+//+++++++++++++++++++++++++++++++++++++++
 
 collision checkray(float ray[], object objlist[], int objcount, float origin[]){
 	collision finalhit;
@@ -111,7 +129,7 @@ collision checkray(float ray[], object objlist[], int objcount, float origin[]){
 
 void surfacenormalize (object target, float hitpoint[], float finalvec[]) {
 	float vector[3] = {(hitpoint[0] - target.values[1]), (hitpoint[1] - target.values[2]), (hitpoint[2] - target.values[3])};
-	normalize(vector);
+	vecnormalize(vector);
 	
 	finalvec[0] = vector[0];
 	finalvec[1] = vector[1];
@@ -119,19 +137,59 @@ void surfacenormalize (object target, float hitpoint[], float finalvec[]) {
 }
 
 //++++++++++++++++++++++++++++++++++
+float find_allignement(float vec1[], float vec2[]){
+	float dotP = float_dotP(vec1,vec2);
+	
+	float length1 = sqrt((SQ(vec1[0])+SQ(vec1[1])+SQ(vec1[2])));
+	float length2 = sqrt((SQ(vec2[0])+SQ(vec2[1])+SQ(vec2[2])));
+	
+	float allignement = (dotP/(length1*length2));
+	return allignement;
+}
+//++++++++
 
-//float lighting(object target, float hitpoint[], light lightlist[], int lightcount)  {
-//	float surfacenormal[3];
-//	
-//	surfacenormalize(target, hitpoint[3], surfacenormal[3]);
-//	
-//	for (int n=0; n<lightcount; n++){
-//		float lightray[3] = {lightlist[n].pos[0] - hitpoint[0], lightlist[n].pos[1] - hitpoint[1], lightlist[n].pos[2] - hitpoint[2]};
-//		normalize(lightray);
+float lighting(object target, float hitpoint[], light lightlist[], int n, object objlist[], int objcount)  {
+	float surfacenormal[3];
 	
+	surfacenormalize(target, hitpoint, surfacenormal);
+	//printf("%f,%f,%f\n", surfacenormal[0],surfacenormal[1],surfacenormal[2]);
+		
+	float fulllightray[3] = {lightlist[n].pos[0] - hitpoint[0], lightlist[n].pos[1] - hitpoint[1], lightlist[n].pos[2] - hitpoint[2]};
 	
+	//printf("%f ; %f ; %f\n", lightlist[n].pos[0],lightlist[n].pos[1],lightlist[n].pos[2]);
+	float lightray[3];
+	veccopy(lightray, fulllightray);
+	//printf("%f,%f,%f\n", lightray[0],lightray[1],lightray[2]);
 	
-//}
+	vecnormalize(lightray);
+	//printf("%f,%f,%f\n", lightray[0],lightray[1],lightray[2]);
+	
+	float lightfactor = find_allignement(lightray, surfacenormal);
+	//printf("%f\n", lightfactor);
+	if (lightfactor > 0){
+		collision lightvision;
+		
+		float raystart[3];
+		float shifter[3];
+		veccopy(shifter, surfacenormal);
+		vecscale(0.1, shifter);
+		vecplus(hitpoint, shifter, raystart);
+		
+		lightvision = checkray(lightray, objlist, objcount, raystart);
+		
+		if (lightvision.hit == 1){
+			
+			float lightdistance = vecmagnitude(fulllightray);
+			if (lightdistance > lightvision.time){lightfactor = 0;}
+	}
+				
+}
+	
+
+
+if (lightfactor < 0){lightfactor = 0;}
+return lightfactor;
+}
 
 
 //++++++++++++++++++++++
@@ -208,7 +266,22 @@ void main(){
 	objlist[2] = S3;
 	objlist[3] = S4;
 	
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	//++++++++++++++++++++++++++++++++++++++create light sources++++++++++++++++++++++++++++++++
+	
+	light L1;
+	L1.pos[0] = 4;
+	L1.pos[1] = 5;
+	L1.pos[2] = 5;
+	
+	
+	
+	//+++++++++++++ light list ++++++++++++++++++++++
+	
+	light lightlist[5];
+	int lightcount = 1;
+	
+	lightlist[0] = L1;
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
 	Camera Camera1;
 	Camera1.Depth = 1;
@@ -232,12 +305,29 @@ void main(){
 		ray[1] = ((0.5 * Camera1.Winy) - ((float)Camera1.Winy / (window1.resy-1)) * (l/window1.resx));
 		ray[0] = ((-0.5 * Camera1.Winx) + (((float)Camera1.Winx / (window1.resx-1)) * (l - (window1.resx * (l/window1.resx)))));
 		
-		normalize(ray);
+		vecnormalize(ray);
 		
 		float origin[3] = {0,0,0};
 		hit = checkray(ray, objlist, objcount,origin);
 		
-		if (hit.hit == 1){ framebuffer[l][0] = objlist[hit.target].values[5]; framebuffer[l][1] = objlist[hit.target].values[6]; framebuffer[l][2] = objlist[hit.target].values[7]; }
+		if (hit.hit == 1){ 
+			float lightfactor;
+			float hitpoint[3];
+			
+			//lightfactor = 1;
+			//printf("%f\n", hit.time);
+			
+			veccopy(hitpoint, ray);
+			vecscale(hit.time, hitpoint);
+			
+			lightfactor = lighting(objlist[hit.target], hitpoint, lightlist, 0, objlist, objcount);
+			printf("%f\n", lightfactor);
+			
+			framebuffer[l][0] = (objlist[hit.target].values[5]*lightfactor); 
+			framebuffer[l][1] = (objlist[hit.target].values[6]*lightfactor); 
+			framebuffer[l][2] = (objlist[hit.target].values[7]*lightfactor); 
+			}
+			
 		else{ for(int bac = 0; bac <= 2; bac++){ framebuffer[l][bac] = background; }}
 	}
 	
