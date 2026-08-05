@@ -321,7 +321,7 @@ void main(){
 			vecscale(hit.time, hitpoint);
 			
 			lightfactor = lighting(objlist[hit.target], hitpoint, lightlist, 0, objlist, objcount);
-			printf("%f\n", lightfactor);
+			//printf("%f\n", lightfactor);
 			
 			framebuffer[l][0] = (objlist[hit.target].values[5]*lightfactor); 
 			framebuffer[l][1] = (objlist[hit.target].values[6]*lightfactor); 
