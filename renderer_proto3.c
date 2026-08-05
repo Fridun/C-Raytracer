@@ -262,21 +262,43 @@ void main(){
 	S4.values[6] = 0;	//green
 	S4.values[7] = 128;	//blue
 	
+	object S5; //sphere 4
+	S5.values[0] = 1; 	//shape
+	S5.values[1] = 5.5; 	//posx
+	S5.values[2] = 20;	//posy
+	S5.values[3] = 75;	//posz
+	S5.values[4] = 10;	//radius
+	S5.values[5] = 0;	//red
+	S5.values[6] = 128;	//green
+	S5.values[7] = 128;	//blue
+	
+	object S6; //sphere 4
+	S6.values[0] = 1; 	//shape
+	S6.values[1] = -12; 	//posx
+	S6.values[2] = 20;	//posy
+	S6.values[3] = 80;	//posz
+	S6.values[4] = 10;	//radius
+	S6.values[5] = 255;	//red
+	S6.values[6] = 255;	//green
+	S6.values[7] = 0;	//blue
+
 	//++++++++++++++++++++++++++++ Here add objects to objlist and set objcount to the mount of objects ++++++++++++++++++++++++++++
-	object objlist[5];
-	int objcount = 4;
+	object objlist[6];
+	int objcount = 6;
 	
 	objlist[0] = S1;
 	objlist[1] = S2;
 	objlist[2] = S3;
 	objlist[3] = S4;
+	objlist[4] = S5;
+	objlist[5] = S6;
 	
 	//++++++++++++++++++++++++++++++++++++++create light sources++++++++++++++++++++++++++++++++
 	
 	light L1;
-	L1.pos[0] = -1;
-	L1.pos[1] = 0;
-	L1.pos[2] = 7;
+	L1.pos[0] = 1;
+	L1.pos[1] = 1;
+	L1.pos[2] = 5.5;
 	
 	
 	
@@ -324,6 +346,7 @@ void main(){
 			
 			veccopy(hitpoint, ray);
 			vecscale(hit.time, hitpoint);
+			vecplus(hitpoint, origin, hitpoint);
 			
 			lightfactor = lighting(objlist[hit.target], hitpoint, lightlist, 0, objlist, objcount);
 			//printf("%f\n", lightfactor);
