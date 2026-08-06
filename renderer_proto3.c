@@ -300,14 +300,19 @@ void main(){
 	L1.pos[1] = 1;
 	L1.pos[2] = 5.5;
 	
+	light L2;
+	L2.pos[0] = -1;
+	L2.pos[1] = 0;
+	L2.pos[2] = 5.5;
 	
 	
 	//+++++++++++++ light list ++++++++++++++++++++++
 	
 	light lightlist[5];
-	int lightcount = 1;
+	int lightcount = 2;
 	
 	lightlist[0] = L1;
+	lightlist[1] = L2;
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
 	Camera Camera1;
@@ -339,6 +344,7 @@ void main(){
 		
 		if (hit.hit == 1){ 
 			float lightfactor;
+			float templight;
 			float hitpoint[3];
 			
 			//lightfactor = 1;
@@ -346,9 +352,19 @@ void main(){
 			
 			veccopy(hitpoint, ray);
 			vecscale(hit.time, hitpoint);
+			
 			vecplus(hitpoint, origin, hitpoint);
 			
-			lightfactor = lighting(objlist[hit.target], hitpoint, lightlist, 0, objlist, objcount);
+			for (int i = 0; i < lightcount; i++){
+				templight = lighting(objlist[hit.target], hitpoint, lightlist, i, objlist, objcount);
+				
+				if(i==0){lightfactor = templight;}
+				else{lightfactor = lightfactor + templight;}
+			}
+			
+			
+			
+			
 			//printf("%f\n", lightfactor);
 			
 			framebuffer[l][0] = (objlist[hit.target].values[5]*lightfactor); 
