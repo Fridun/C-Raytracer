@@ -7,7 +7,15 @@
 #define SQ(x) ((x)*(x))
 
 typedef struct object{
-	float values[10];
+	int type;
+	int col[3];
+	union {
+		struct {
+			float radius;
+			float pos[3];
+		} sphere;
+		
+	} shape;
 } object;
 
 typedef struct light{
@@ -74,18 +82,18 @@ float vecmagnitude(float vec[]){
 	
 //++++++++++++
 
-collision check_sphere(float ray[],object sphere, int Nobj, float origin[]){
+collision check_sphere(float ray[],object target, int Nobj, float origin[]){
 	collision collide;
 	collide.target = Nobj;
 	
 	float a = float_dotP(ray, ray); 
 	
-	float pos[3] = {sphere.values[1],sphere.values[2],sphere.values[3]};
-	float oripos[3];
+	float pos[3] = {target.shape.sphere.pos[0],target.shape.sphere.pos[1],target.shape.sphere.pos[2] };
+	float oripos[3]; 
 	vecminus(origin, pos, oripos);
 	float b = (2 * (float_dotP(oripos, ray)));
 	//float c = ((-2*float_dotP(origin, pos)) + float_dotP(origin, origin) + float_dotP(pos, pos) - SQ(sphere.values[4])); equivalent to current
-	float c = float_dotP(oripos, oripos) - SQ(sphere.values[4]);
+	float c = float_dotP(oripos, oripos) - SQ(target.shape.sphere.radius);
 	
 	if ((SQ(b) - (4*a*c)) < 0){ collide.hit = 0; return collide;}
 	
@@ -109,8 +117,8 @@ collision checkray(float ray[], object objlist[], int objcount, float origin[]){
 
 	
 	for (int n=0; n<objcount; n++){
-		int shape = objlist[n].values[0];
-		switch (shape){
+		//int shape = objlist[n].type;
+		switch (objlist[n].type){
 		
 			case 1:
 			checkhit = check_sphere(ray, objlist[n], n, origin);
@@ -131,7 +139,7 @@ collision checkray(float ray[], object objlist[], int objcount, float origin[]){
 //++++
 
 void surfacenormalize (object target, float hitpoint[], float finalvec[]) {
-	float vector[3] = {(hitpoint[0] - target.values[1]), (hitpoint[1] - target.values[2]), (hitpoint[2] - target.values[3])};
+	float vector[3] = {(hitpoint[0] - target.shape.sphere.pos[0]), (hitpoint[1] - target.shape.sphere.pos[1]), (hitpoint[2] - target.shape.sphere.pos[2])};
 	vecnormalize(vector);
 	
 	finalvec[0] = vector[0];
@@ -222,65 +230,66 @@ void writeimage(int resx, int resy, int colors, int frame[][3]){
 void main(){
 	
 	//+++++++++++++++++++++  ADD OBJECTS HERE +++++++++++++++++++++++++++++
-	object S1; //sphere 1
-	S1.values[0] = 1; 	//shape
-	S1.values[1] = 0; 	//posx
-	S1.values[2] = 0;	//posy
-	S1.values[3] = 10;	//posz
-	S1.values[4] = 2;	//radius
-	S1.values[5] = 128;	//red
-	S1.values[6] = 0;	//green
-	S1.values[7] = 0;	//blue
+	object S1;
+	S1.type = 1;
+	S1.col[0] = 128;	//red
+	S1.col[1] = 0; 		//green
+	S1.col[2] = 0; 		//blue
+	S1.shape.sphere.pos[0] = 0;
+	S1.shape.sphere.pos[1] = 0;
+	S1.shape.sphere.pos[2] = 10;
+	S1.shape.sphere.radius = 2;
 	
-	object S2; //sphere 2
-	S2.values[0] = 1; 	//shape
-	S2.values[1] = 4; 	//posx
-	S2.values[2] = 2;	//posy
-	S2.values[3] = 15;	//posz
-	S2.values[4] = 2;	//radius
-	S2.values[5] = 0;	//red
-	S2.values[6] = 0;	//green
-	S2.values[7] = 128;	//blue
+	object S2;
+	S2.type = 1;
+	S2.col[0] = 0;		//red
+	S2.col[1] = 0; 		//green
+	S2.col[2] = 128; 	//blue
+	S2.shape.sphere.pos[0] = 4;
+	S2.shape.sphere.pos[1] = 2;
+	S2.shape.sphere.pos[2] = 15;
+	S2.shape.sphere.radius = 2;
 	
-	object S3; //sphere 3
-	S3.values[0] = 1; 	//shape
-	S3.values[1] = -4; 	//posx
-	S3.values[2] = -3;	//posy
-	S3.values[3] = 8;	//posz
-	S3.values[4] = 2;	//radius
-	S3.values[5] = 0;	//red
-	S3.values[6] = 128;	//green
-	S3.values[7] = 0;	//blue
+	object S3;
+	S3.type = 1;
+	S3.col[0] = 0;		//red
+	S3.col[1] = 128; 	//green
+	S3.col[2] = 0; 		//blue
+	S3.shape.sphere.pos[0] = -4;
+	S3.shape.sphere.pos[1] = -3;
+	S3.shape.sphere.pos[2] = 8;
+	S3.shape.sphere.radius = 2;
 	
-	object S4; //sphere 4
-	S4.values[0] = 1; 	//shape
-	S4.values[1] = -15; 	//posx
-	S4.values[2] = 10;	//posy
-	S4.values[3] = 50;	//posz
-	S4.values[4] = 3;	//radius
-	S4.values[5] = 64;	//red
-	S4.values[6] = 0;	//green
-	S4.values[7] = 128;	//blue
+	object S4;
+	S4.type = 1;
+	S4.col[0] = 64;	//red
+	S4.col[1] = 0; 		//green
+	S4.col[2] = 128; 		//blue
+	S4.shape.sphere.pos[0] = -15;
+	S4.shape.sphere.pos[1] = 10;
+	S4.shape.sphere.pos[2] = 50;
+	S4.shape.sphere.radius = 3;
+
+	object S5;
+	S5.type = 1;
+	S5.col[0] = 0;	//red
+	S5.col[1] = 128; 		//green
+	S5.col[2] = 128; 		//blue
+	S5.shape.sphere.pos[0] = 5.5;
+	S5.shape.sphere.pos[1] = 20;
+	S5.shape.sphere.pos[2] = 75;
+	S5.shape.sphere.radius = 10;
 	
-	object S5; //sphere 4
-	S5.values[0] = 1; 	//shape
-	S5.values[1] = 5.5; 	//posx
-	S5.values[2] = 20;	//posy
-	S5.values[3] = 75;	//posz
-	S5.values[4] = 10;	//radius
-	S5.values[5] = 0;	//red
-	S5.values[6] = 128;	//green
-	S5.values[7] = 128;	//blue
+	object S6;
+	S6.type = 1;
+	S6.col[0] = 255;	//red
+	S6.col[1] = 255; 		//green
+	S6.col[2] = 0; 		//blue
+	S6.shape.sphere.pos[0] = -12;
+	S6.shape.sphere.pos[1] = 20;
+	S6.shape.sphere.pos[2] = 80;
+	S6.shape.sphere.radius = 10;
 	
-	object S6; //sphere 4
-	S6.values[0] = 1; 	//shape
-	S6.values[1] = -12; 	//posx
-	S6.values[2] = 20;	//posy
-	S6.values[3] = 80;	//posz
-	S6.values[4] = 10;	//radius
-	S6.values[5] = 255;	//red
-	S6.values[6] = 255;	//green
-	S6.values[7] = 0;	//blue
 
 	//++++++++++++++++++++++++++++ Here add objects to objlist and set objcount to the mount of objects ++++++++++++++++++++++++++++
 	object objlist[6];
@@ -292,7 +301,6 @@ void main(){
 	objlist[3] = S4;
 	objlist[4] = S5;
 	objlist[5] = S6;
-	
 	//++++++++++++++++++++++++++++++++++++++create light sources++++++++++++++++++++++++++++++++
 	
 	light L1;
@@ -321,8 +329,8 @@ void main(){
 	Camera1.Winy = 1;
 
 	struct window window1;
-	window1.resx = 1000;
-	window1.resy = 1000;
+	window1.resx = 4000;
+	window1.resy = 4000;
 	window1.colors = 255;
 
 	int background = 255;
@@ -363,13 +371,9 @@ void main(){
 			}
 			
 			
-			
-			
-			//printf("%f\n", lightfactor);
-			
-			framebuffer[l][0] = (objlist[hit.target].values[5]*lightfactor); 
-			framebuffer[l][1] = (objlist[hit.target].values[6]*lightfactor); 
-			framebuffer[l][2] = (objlist[hit.target].values[7]*lightfactor); 
+			framebuffer[l][0] = (objlist[hit.target].col[0]*lightfactor); 
+			framebuffer[l][1] = (objlist[hit.target].col[1]*lightfactor); 
+			framebuffer[l][2] = (objlist[hit.target].col[2]*lightfactor); 
 			}
 			
 		else{ for(int bac = 0; bac <= 2; bac++){ framebuffer[l][bac] = background; }}
