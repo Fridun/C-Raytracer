@@ -1,20 +1,347 @@
-Hey. So this is a raytracer I've made in C. As of this version it supports only spheres of solid colors, but can support multiple spheres at once. No shadows yet.
+*THIS DOCUMENT AND THIS DOCUMENT ONLY IS MADE WITH AI, I AM TOO LAZY TO MAKE A COMPREHENSIVE USER GUIDE SINCE I DONT KNOW THE STANDARD TERMINOLOGY AND IF I JUST EXPLAINED IT HOW I UNDERSTAND IT, IT WOULD PROBABLY BE MORE CONFUSING THAN HELPFUL. 
 
-This is the structure for a sphere object if you want to make one:
-	
-	object S1; //sphere 1
-	S1.values[0] = 1; 	//shape
-	S1.values[1] = 0; 	//posx
-	S1.values[2] = 0;	//posy
-	S1.values[3] = 10;	//posz
-	S1.values[4] = 2;	//radius
-	S1.values[5] = 128;	//red
-	S1.values[6] = 0;	//green
-	S1.values[7] = 0;	//blue
-You must make it in the main function, and then both add it to the objlist array as well as making sure that the integer objcount = the amount of objects in the scene. All this must be done before the for loop close to the end of the main function.
-	
-Z axis: depth, distance straight in front of camera
-X axis: left-right
-Y axis: up-down
+I HAVE READ THROUGH IT AND ADDED/REMOVED PARTS TO MAKE SURE EVERYTHING IS CORRECT.
 
-Other notes: I'm not sure whether or not i want to keep that object.values[] structure. Might end up changing it to individual variables. We'll see.
+
+A small raytracer written in C from scratch.
+
+The renderer currently supports:
+
+- Spheres
+- Infinite planes
+- Multiple objects
+- Multiple point lights
+- Diffuse lighting
+- Basic hard shadows
+- PPM image output
+
+The project is primarily a learning project, so the code is intentionally simple and may not follow conventional renderer architecture.
+
+## Compiling
+
+The program can currently be compiled with GCC using:
+
+gcc renderertest.c -o test -lm
+
+Then run it with:
+
+./test
+
+The renderer writes the resulting image to:
+
+image.ppm
+
+---
+
+# Coordinate System
+
+The renderer uses the following coordinate system:
+
+- X: left / right
+- Y: up / down
+- Z: depth, with positive Z being in front of the camera
+
+The camera is currently positioned at:
+
+(0, 0, 0)
+
+---
+
+# Creating Objects
+
+Objects are represented by the object struct.
+
+Each object has:
+
+int type;
+int col[3];
+
+The type determines which shape data in the union is used.
+
+Currently:
+
+type 1 = sphere
+type 2 = plane
+
+Because shape is a union, only the appropriate shape data should be accessed according to the object's type.
+
+## Sphere
+
+Example:
+
+object S1;
+
+S1.type = 1;
+
+S1.col[0] = 128;    // red
+S1.col[1] = 0;      // green
+S1.col[2] = 0;      // blue
+
+S1.shape.sphere.pos[0] = 0;   // X
+S1.shape.sphere.pos[1] = 0;   // Y
+S1.shape.sphere.pos[2] = 10;  // Z
+
+S1.shape.sphere.radius = 2;
+
+The sphere's position is its center.
+
+RGB values range from 0 to 255.
+
+## Plane
+
+Example:
+
+object P1;
+
+P1.type = 2;
+
+P1.col[0] = 128;
+P1.col[1] = 128;
+P1.col[2] = 128;
+
+P1.shape.plane.normal[0] = 0;
+P1.shape.plane.normal[1] = 1;
+P1.shape.plane.normal[2] = 0;
+
+P1.shape.plane.offset = -30;
+
+The plane is defined by its normal vector and offset.
+
+The normal determines the orientation of the plane.
+
+For example:
+
+(0, 1, 0)   horizontal plane
+(1, 0, 0)   vertical plane facing +X
+(0, 0, 1)   vertical plane facing +Z
+
+The normal does not have to point along an axis. For example:
+
+P1.shape.plane.normal[0] = 0;
+P1.shape.plane.normal[1] = 1;
+P1.shape.plane.normal[2] = 1;
+
+produces a tilted plane.
+
+The offset moves it along its normal vector by the offset. If the normal is (0,1,0) and the offset -20, then the plane with be at y=-20. 
+
+### Plane orientation and lighting
+
+The direction of the normal matters for lighting.
+
+The current renderer treats a plane as having a specific facing direction rather than automatically lighting both sides.
+
+Therefore, if a plane is intended to face the camera/light, its normal needs to be oriented appropriately.
+
+For example, a vertical wall in front of the camera may need:
+
+normal = (0, 0, -1)
+
+rather than:
+
+normal = (0, 0, 1)
+
+depending on which side of the plane the camera is on.
+
+---
+
+# Adding Objects to the Scene
+
+Creating an object is not enough.
+
+It must also be added to `objlist`.
+
+For example, if the scene contains two spheres and one plane:
+
+object objlist[3];
+
+int objcount = 3;
+
+objlist[0] = S1;
+objlist[1] = S2;
+objlist[2] = P1;
+
+### Important
+
+objcount must always match the number of objects in objlist.
+
+For example, this is wrong:
+
+object objlist[3];
+
+int objcount = 4;
+
+because the renderer will attempt to access an object that does not exist.
+
+Similarly, this is wrong:
+
+object objlist[2];
+
+objlist[0] = S1;
+objlist[1] = S2;
+objlist[2] = P1;
+
+because objlist[2] is outside the array.
+
+---
+
+# Object Types and the Union
+
+The object structure currently uses a union:
+
+union {
+    struct {
+        float radius;
+        float pos[3];
+    } sphere;
+
+    struct {
+        float normal[3];
+        float offset;
+    } plane;
+} shape;
+
+This means the same memory is used for the sphere and plane data.
+
+The object's type therefore determines which part should be accessed.
+
+For example:
+
+switch(target.type) {
+
+    case 1:
+        // sphere data
+        target.shape.sphere.radius;
+        break;
+
+    case 2:
+        // plane data
+        target.shape.plane.normal;
+        break;
+}
+
+Do not treat a plane as though it were a sphere, or vice versa.
+
+---
+
+# Surface Normals
+
+Surface normals are currently calculated differently depending on the object.
+
+For spheres, the renderer calculates the normal from the sphere's center to the hit point:
+
+sphere_surfacenormalize(target, hitpoint, surfacenormal);
+
+For planes, the plane's normal is already stored in the object:
+
+veccopy(surfacenormal, target.shape.plane.normal);
+
+The lighting code therefore has to select the appropriate method based on the object type:
+
+switch(target.type) {
+
+    case 1:
+        sphere_surfacenormalize(target, hitpoint, surfacenormal);
+        break;
+
+    case 2:
+        veccopy(surfacenormal, target.shape.plane.normal);
+        break;
+}
+
+If another shape is added later, it will need its own method of determining its surface normal and will need to be added to this logic.
+
+---
+
+# Lights
+
+Lights are currently point lights.
+
+Example:
+
+light L1;
+
+L1.pos[0] = 1;
+L1.pos[1] = 1;
+L1.pos[2] = 5.5;
+
+Multiple lights can be placed in lightlist:
+
+light lightlist[5];
+
+int lightcount = 2;
+
+lightlist[0] = L1;
+lightlist[1] = L2;
+
+As with objects, lightcount should correspond to the number of lights actually placed in the list. 
+In theory the light struct also has some other variables, like intensity and color, but those features have not been implemented yet.
+
+---
+
+# Camera
+
+The camera currently has:
+
+Camera Camera1;
+
+Camera1.Depth = 1;
+Camera1.Winx = 1;
+Camera1.Winy = 1;
+
+Winx and Winy effectively define the size of the camera's viewing window, while Depth controls its distance from the camera.
+
+The camera's position is the array called origin in main. Upon download its values are:
+(0, 0, 0)
+
+---
+
+# Resolution
+
+The output resolution is controlled here:
+
+struct window window1;
+
+window1.resx = 1000;
+window1.resy = 1000;
+window1.colors = 255;
+
+Careful when changing the ratio. anything other than 1:1 will create FOV problems in the final image if you dont also change the depth. the physics should still work though.
+
+---
+
+# Important Things to Remember
+
+When modifying the scene:
+
+1. Create the object.
+2. Set its type.
+3. Set its color.
+4. Set the appropriate shape data.
+5. Add it to objlist.
+6. Make sure objcount matches the number of objects.
+7. If adding a new object type, you are on your own. add the switch cases and such, but you will probably have to also create new light ray collision functions, maybe lighting functions.
+8. Remember that plane normals determine which side of the plane is considered to be facing the light.
+9. When debugging, temporarily disabling lighting and shadows can make intersection problems much easier to identify.
+
+---
+
+# Current Limitations
+
+This is still an early renderer and has several intentional limitations.
+
+Among other things:
+
+- Only spheres and infinite planes are currently supported.
+- The camera has very limited controls.
+- Lighting is basic diffuse lighting.
+- Lights are currently simple point lights.
+- Shadows are hard-edged.
+- There are no reflections or refractions.
+- Materials are very basic.
+- There is no external scene/object format.
+- Objects are currently created directly in the C source.
+- Numerical robustness has not been extensively addressed.
+- The renderer is not optimized for performance. However since you will only use it to create 1 image at a time its fine, 1000x1000 takes like a second or two. 4000x4000 takes i think ~10s and 6000x6000 took a little under 20s.
+
+The project is primarily intended as an exercise in understanding how a renderer works rather than as a production renderer.
