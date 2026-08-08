@@ -1,5 +1,5 @@
 I compile like this:
-gcc renderer.c -o renderer -lm
+gcc renderer_proto.c -o renderer -lm
 
 Then run ./renderer 
 
