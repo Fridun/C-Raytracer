@@ -15,6 +15,11 @@ typedef struct object{
 			float pos[3];
 		} sphere;
 		
+		struct { 
+			float normal[3];
+			float offset;
+		} plane;
+		
 	} shape;
 } object;
 
@@ -80,8 +85,19 @@ float vecmagnitude(float vec[]){
 	return magnitude;
 	}
 	
-//++++++++++++
-
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+collision check_plane(float ray[], object target, int Nobj, float origin[]){
+	collision collide;
+	collide.target = Nobj;
+	if (float_dotP(ray, target.shape.plane.normal) == 0){ collide.hit = 0; return collide;}
+	
+	collide.time = (target.shape.plane.offset - float_dotP(origin, target.shape.plane.normal))/(float_dotP(ray, target.shape.plane.normal));
+	if (collide.time < 0){collide.hit = 0; return collide;}
+	collide.hit = 1;
+	return collide;
+}
+	
+//+++++++++++++++++++++++++
 collision check_sphere(float ray[],object target, int Nobj, float origin[]){
 	collision collide;
 	collide.target = Nobj;
@@ -117,20 +133,25 @@ collision checkray(float ray[], object objlist[], int objcount, float origin[]){
 
 	
 	for (int n=0; n<objcount; n++){
+		//if (objlist[n].type != 1){printf("%d\n", objlist[n].type);}
 		//int shape = objlist[n].type;
 		switch (objlist[n].type){
 		
 			case 1:
 			checkhit = check_sphere(ray, objlist[n], n, origin);
+			break;
 			
-		
+			case 2:
+			//printf("here");
+			checkhit = check_plane(ray, objlist[n], n, origin);
+			break;
+		}
 		if (n==0){finalhit = checkhit;}
 		else{
 			if (finalhit.hit == 0 && checkhit.hit == 1){finalhit = checkhit;}
 			else if(finalhit.hit == 1 && checkhit.hit == 1 && finalhit.time > checkhit.time){finalhit = checkhit;}
 		}
 		}
-	}
 	
 
 	return finalhit;
@@ -138,7 +159,7 @@ collision checkray(float ray[], object objlist[], int objcount, float origin[]){
 	
 //++++
 
-void surfacenormalize (object target, float hitpoint[], float finalvec[]) {
+void sphere_surfacenormalize (object target, float hitpoint[], float finalvec[]) {
 	float vector[3] = {(hitpoint[0] - target.shape.sphere.pos[0]), (hitpoint[1] - target.shape.sphere.pos[1]), (hitpoint[2] - target.shape.sphere.pos[2])};
 	vecnormalize(vector);
 	
@@ -162,21 +183,26 @@ float find_allignement(float vec1[], float vec2[]){
 float lighting(object target, float hitpoint[], light lightlist[], int n, object objlist[], int objcount)  {
 	float surfacenormal[3];
 	
-	surfacenormalize(target, hitpoint, surfacenormal);
-	//printf("%f,%f,%f\n", surfacenormal[0],surfacenormal[1],surfacenormal[2]);
+	switch(target.type){
+		
+		case 1:
+		sphere_surfacenormalize(target, hitpoint, surfacenormal);
+		break;
+		
+		case 2:
+		veccopy(surfacenormal, target.shape.plane.normal);
+		break;
+		
+	}
 		
 	float fulllightray[3] = {lightlist[n].pos[0] - hitpoint[0], lightlist[n].pos[1] - hitpoint[1], lightlist[n].pos[2] - hitpoint[2]};
 	
-	//printf("%f ; %f ; %f\n", lightlist[n].pos[0],lightlist[n].pos[1],lightlist[n].pos[2]);
 	float lightray[3];
 	veccopy(lightray, fulllightray);
-	//printf("%f,%f,%f\n", lightray[0],lightray[1],lightray[2]);
 	
 	vecnormalize(lightray);
-	//printf("%f,%f,%f\n", lightray[0],lightray[1],lightray[2]);
 	
 	float lightfactor = find_allignement(lightray, surfacenormal);
-	//printf("%f\n", lightfactor);
 	if (lightfactor > 0){
 		collision lightvision;
 		
@@ -189,10 +215,8 @@ float lighting(object target, float hitpoint[], light lightlist[], int n, object
 		lightvision = checkray(lightray, objlist, objcount, raystart);
 		
 		if (lightvision.hit == 1){
-			//printf("hit\n");
+
 			float lightdistance = vecmagnitude(fulllightray);
-			//printf("lightdistance: %f\n", lightdistance);
-			//printf("light time: %f\n", lightvision.time);
 			if (lightdistance > lightvision.time){lightfactor = 0;}
 	}
 				
@@ -284,16 +308,26 @@ void main(){
 	S6.type = 1;
 	S6.col[0] = 255;	//red
 	S6.col[1] = 255; 		//green
-	S6.col[2] = 0; 		//blue
+	S6.col[2] = 1; 		//blue
 	S6.shape.sphere.pos[0] = -12;
 	S6.shape.sphere.pos[1] = 20;
 	S6.shape.sphere.pos[2] = 80;
 	S6.shape.sphere.radius = 10;
 	
+	object P1;
+	P1.type = 2;//plane
+	P1.col[0] = 128;
+	P1.col[1] = 128;
+	P1.col[2] = 128;
+	P1.shape.plane.normal[0] = 0;
+	P1.shape.plane.normal[1] = 1;
+	P1.shape.plane.normal[2] = 0;
+	P1.shape.plane.offset = -20;
+
 
 	//++++++++++++++++++++++++++++ Here add objects to objlist and set objcount to the mount of objects ++++++++++++++++++++++++++++
-	object objlist[6];
-	int objcount = 6;
+	object objlist[7];
+	int objcount = 7;
 	
 	objlist[0] = S1;
 	objlist[1] = S2;
@@ -301,6 +335,7 @@ void main(){
 	objlist[3] = S4;
 	objlist[4] = S5;
 	objlist[5] = S6;
+	objlist[6] = P1;
 	//++++++++++++++++++++++++++++++++++++++create light sources++++++++++++++++++++++++++++++++
 	
 	light L1;
@@ -329,8 +364,8 @@ void main(){
 	Camera1.Winy = 1;
 
 	struct window window1;
-	window1.resx = 4000;
-	window1.resy = 4000;
+	window1.resx = 1000;
+	window1.resy = 1000;
 	window1.colors = 255;
 
 	int background = 255;
@@ -355,12 +390,12 @@ void main(){
 			float templight;
 			float hitpoint[3];
 			
-			//lightfactor = 1;
+			
 			//printf("%f\n", hit.time);
 			
 			veccopy(hitpoint, ray);
 			vecscale(hit.time, hitpoint);
-			
+		
 			vecplus(hitpoint, origin, hitpoint);
 			
 			for (int i = 0; i < lightcount; i++){
@@ -369,7 +404,7 @@ void main(){
 				if(i==0){lightfactor = templight;}
 				else{lightfactor = lightfactor + templight;}
 			}
-			
+			//lightfactor = 1;
 			
 			framebuffer[l][0] = (objlist[hit.target].col[0]*lightfactor); 
 			framebuffer[l][1] = (objlist[hit.target].col[1]*lightfactor); 
