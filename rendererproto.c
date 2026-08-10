@@ -283,6 +283,39 @@ array3 reflect(float ray[], object target, float hitpoint[], object objlist[], i
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+array3 findcolor(float ray[], object target, collision lastcollision,float origin[3], object objlist[], int objcount, int background, light lightlist[], int lightcount){
+	array3 color = {};
+	array3 refcol = {};
+	
+	float lightfactor;
+	float templight;
+	float hitpoint[3];
+	
+	veccopy(hitpoint, ray);
+	vecscale(lastcollision.time, hitpoint);
+	vecplus(hitpoint, origin, hitpoint);
+	
+	for (int i = 0; i < lightcount; i++){
+		templight = lighting(target, hitpoint, lightlist, i, objlist, objcount);
+				
+		if(i==0){lightfactor = templight;}
+		else{lightfactor = lightfactor + templight;}
+	}
+	if (target.reflectivity != 0){
+		refcol = reflect(ray, objlist[lastcollision.target],hitpoint, objlist, objcount, background);
+	}
+	
+	color.array[0] = ((((1 - target.reflectivity) * target.col[0]) + (target.reflectivity * refcol.array[0]))*lightfactor);
+	color.array[1] = ((((1 - target.reflectivity) * target.col[1]) + (target.reflectivity * refcol.array[1]))*lightfactor);
+	color.array[2] = ((((1 - target.reflectivity) * target.col[2]) + (target.reflectivity * refcol.array[2]))*lightfactor);
+	
+	
+	
+	return color;
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
 void writeimage(int resx, int resy, int colors, int frame[][3]){
 	FILE *im;
@@ -333,9 +366,9 @@ void main(){
 	S3.col[1] = 128; 	//green
 	S3.col[2] = 0; 		//blue
 	S3.shape.sphere.pos[0] = -4;
-	S3.shape.sphere.pos[1] = -3;
+	S3.shape.sphere.pos[1] = -2;
 	S3.shape.sphere.pos[2] = 8;
-	S3.shape.sphere.radius = 2;
+	S3.shape.sphere.radius = 1;
 	
 	object S4 = {};
 	S4.type = 1;
@@ -439,6 +472,7 @@ void main(){
 	
 	int (*framebuffer)[3] = malloc(window1.resx * window1.resy * 3 * sizeof(int));
 	
+	int reflectionlimit = 5;
 	
 	float ray[3];
 	ray[2] = Camera1.Depth;
@@ -457,31 +491,11 @@ void main(){
 		hit = checkray(ray, objlist, objcount,origin);
 		
 		if (hit.hit == 1){ 
-			float lightfactor;
-			float templight;
-			float hitpoint[3];
-			
-			
-			//printf("%f\n", hit.time);
-			
-			veccopy(hitpoint, ray);
-			vecscale(hit.time, hitpoint);
-		
-			vecplus(hitpoint, origin, hitpoint);
-			
-			array3 refcol = reflect(ray, objlist[hit.target],hitpoint, objlist, objcount, background);
-			//printf("%f\n", refcol.array[0]);
-			for (int i = 0; i < lightcount; i++){
-				templight = lighting(objlist[hit.target], hitpoint, lightlist, i, objlist, objcount);
-				
-				if(i==0){lightfactor = templight;}
-				else{lightfactor = lightfactor + templight;}
-			}
-			//lightfactor = 1;
-			
-			framebuffer[l][0] = ((((1 - objlist[hit.target].reflectivity) * objlist[hit.target].col[0]) + (objlist[hit.target].reflectivity * refcol.array[0]))*lightfactor); 
-			framebuffer[l][1] = ((((1 - objlist[hit.target].reflectivity) * objlist[hit.target].col[1]) + (objlist[hit.target].reflectivity * refcol.array[1]))*lightfactor); 
-			framebuffer[l][2] = ((((1 - objlist[hit.target].reflectivity) * objlist[hit.target].col[2]) + (objlist[hit.target].reflectivity * refcol.array[2]))*lightfactor); 
+
+			array3 color = findcolor(ray, objlist[hit.target], hit, origin, objlist, objcount, background, lightlist, lightcount);
+			framebuffer[l][0] = color.array[0];
+			framebuffer[l][1] = color.array[1];
+			framebuffer[l][2] = color.array[2];
 			}
 			
 		else{ for(int bac = 0; bac <= 2; bac++){ framebuffer[l][bac] = background; }}
