@@ -3,12 +3,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 
 #define SQ(x) ((x)*(x))
 
 typedef struct object{
 	int type;
 	int col[3];
+	float reflectivity;
 	union {
 		struct {
 			float radius;
@@ -43,6 +45,8 @@ struct window{
 };
 
 typedef struct collision{int hit; float time; int target; } collision;
+
+typedef struct array3{float array[3];} array3;
 
 //-------------------------------------------------------------
 	
@@ -194,7 +198,7 @@ float lighting(object target, float hitpoint[], light lightlist[], int n, object
 		break;
 		
 	}
-		
+	vecnormalize(surfacenormal);
 	float fulllightray[3] = {lightlist[n].pos[0] - hitpoint[0], lightlist[n].pos[1] - hitpoint[1], lightlist[n].pos[2] - hitpoint[2]};
 	
 	float lightray[3];
@@ -229,7 +233,56 @@ return lightfactor;
 }
 
 
-//++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+array3 reflect(float ray[], object target, float hitpoint[], object objlist[], int objcount, int background){
+	float flip[3] = {};
+	float reflectedray[3] = {};
+	float SNaligned = {}; //surface normal aligned
+	float surfacenormal[3] = {};
+	collision reflection = {};
+	array3 refcol = {};
+	
+	switch(target.type){
+		
+		case 1:
+		sphere_surfacenormalize(target, hitpoint, surfacenormal);
+		break;
+		
+		case 2:
+		veccopy(surfacenormal, target.shape.plane.normal);
+		break;
+		
+	}
+	
+	SNaligned = float_dotP(surfacenormal, ray);
+	
+	veccopy(flip, surfacenormal);
+	vecscale((2*SNaligned), flip);
+	vecminus(ray, flip, reflectedray);
+	
+	float raystart[3];
+	float shifter[3];
+	veccopy(shifter, surfacenormal);
+	vecscale(0.1, shifter);
+	vecplus(hitpoint, shifter, raystart);
+	
+	reflection = checkray(reflectedray, objlist, objcount, raystart);
+	if (reflection.hit == 1){
+		refcol.array[0] = objlist[reflection.target].col[0];
+		refcol.array[1] = objlist[reflection.target].col[1];
+		refcol.array[2] = objlist[reflection.target].col[2];
+	}
+	else{
+		refcol.array[0] = background;
+		refcol.array[1] = background;
+		refcol.array[2] = background;
+	}
+	return refcol;
+}
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
 void writeimage(int resx, int resy, int colors, int frame[][3]){
 	FILE *im;
@@ -254,7 +307,7 @@ void writeimage(int resx, int resy, int colors, int frame[][3]){
 void main(){
 	
 	//+++++++++++++++++++++  ADD OBJECTS HERE +++++++++++++++++++++++++++++
-	object S1;
+	object S1 = {};
 	S1.type = 1;
 	S1.col[0] = 128;	//red
 	S1.col[1] = 0; 		//green
@@ -264,7 +317,7 @@ void main(){
 	S1.shape.sphere.pos[2] = 10;
 	S1.shape.sphere.radius = 2;
 	
-	object S2;
+	object S2 = {};
 	S2.type = 1;
 	S2.col[0] = 0;		//red
 	S2.col[1] = 0; 		//green
@@ -274,7 +327,7 @@ void main(){
 	S2.shape.sphere.pos[2] = 15;
 	S2.shape.sphere.radius = 2;
 	
-	object S3;
+	object S3 = {};
 	S3.type = 1;
 	S3.col[0] = 0;		//red
 	S3.col[1] = 128; 	//green
@@ -284,7 +337,7 @@ void main(){
 	S3.shape.sphere.pos[2] = 8;
 	S3.shape.sphere.radius = 2;
 	
-	object S4;
+	object S4 = {};
 	S4.type = 1;
 	S4.col[0] = 64;	//red
 	S4.col[1] = 0; 		//green
@@ -294,7 +347,7 @@ void main(){
 	S4.shape.sphere.pos[2] = 50;
 	S4.shape.sphere.radius = 3;
 
-	object S5;
+	object S5 = {};
 	S5.type = 1;
 	S5.col[0] = 0;	//red
 	S5.col[1] = 128; 		//green
@@ -303,8 +356,9 @@ void main(){
 	S5.shape.sphere.pos[1] = 20;
 	S5.shape.sphere.pos[2] = 75;
 	S5.shape.sphere.radius = 10;
+	S5.reflectivity = 1;
 	
-	object S6;
+	object S6 = {};
 	S6.type = 1;
 	S6.col[0] = 255;	//red
 	S6.col[1] = 255; 		//green
@@ -314,7 +368,7 @@ void main(){
 	S6.shape.sphere.pos[2] = 80;
 	S6.shape.sphere.radius = 10;
 	
-	object P1;
+	object P1 = {};
 	P1.type = 2;//plane
 	P1.col[0] = 128;
 	P1.col[1] = 128;
@@ -322,11 +376,23 @@ void main(){
 	P1.shape.plane.normal[0] = 0;
 	P1.shape.plane.normal[1] = 1;
 	P1.shape.plane.normal[2] = 0;
-	P1.shape.plane.offset = -20;
+	P1.shape.plane.offset = -3.5;
+	P1.reflectivity = 1;
+	
+	object P2 = {};  //not being used rn
+	P2.type = 2;//plane
+	P2.col[0] = 128;
+	P2.col[1] = 128;
+	P2.col[2] = 64;
+	P2.shape.plane.normal[0] = 1;
+	P2.shape.plane.normal[1] = 1;
+	P2.shape.plane.normal[2] = -0.5;
+	P2.shape.plane.offset = -25;
+	
 
 
 	//++++++++++++++++++++++++++++ Here add objects to objlist and set objcount to the mount of objects ++++++++++++++++++++++++++++
-	object objlist[7];
+	object objlist[8];
 	int objcount = 7;
 	
 	objlist[0] = S1;
@@ -336,6 +402,7 @@ void main(){
 	objlist[4] = S5;
 	objlist[5] = S6;
 	objlist[6] = P1;
+	//objlist[7] = P2;
 	//++++++++++++++++++++++++++++++++++++++create light sources++++++++++++++++++++++++++++++++
 	
 	light L1;
@@ -375,6 +442,10 @@ void main(){
 	
 	float ray[3];
 	ray[2] = Camera1.Depth;
+	
+	struct timespec starttime, endtime;
+	clock_gettime(CLOCK_MONOTONIC, &starttime);
+	
 	for (int l = 0; l<(window1.resx*window1.resy); l++){
 		collision hit;
 		ray[1] = ((0.5 * Camera1.Winy) - ((float)Camera1.Winy / (window1.resy-1)) * (l/window1.resx));
@@ -398,6 +469,8 @@ void main(){
 		
 			vecplus(hitpoint, origin, hitpoint);
 			
+			array3 refcol = reflect(ray, objlist[hit.target],hitpoint, objlist, objcount, background);
+			//printf("%f\n", refcol.array[0]);
 			for (int i = 0; i < lightcount; i++){
 				templight = lighting(objlist[hit.target], hitpoint, lightlist, i, objlist, objcount);
 				
@@ -406,14 +479,17 @@ void main(){
 			}
 			//lightfactor = 1;
 			
-			framebuffer[l][0] = (objlist[hit.target].col[0]*lightfactor); 
-			framebuffer[l][1] = (objlist[hit.target].col[1]*lightfactor); 
-			framebuffer[l][2] = (objlist[hit.target].col[2]*lightfactor); 
+			framebuffer[l][0] = ((((1 - objlist[hit.target].reflectivity) * objlist[hit.target].col[0]) + (objlist[hit.target].reflectivity * refcol.array[0]))*lightfactor); 
+			framebuffer[l][1] = ((((1 - objlist[hit.target].reflectivity) * objlist[hit.target].col[1]) + (objlist[hit.target].reflectivity * refcol.array[1]))*lightfactor); 
+			framebuffer[l][2] = ((((1 - objlist[hit.target].reflectivity) * objlist[hit.target].col[2]) + (objlist[hit.target].reflectivity * refcol.array[2]))*lightfactor); 
 			}
 			
 		else{ for(int bac = 0; bac <= 2; bac++){ framebuffer[l][bac] = background; }}
 	}
 	
+	clock_gettime(CLOCK_MONOTONIC, &endtime);
+	double rendertime = ((endtime.tv_sec - starttime.tv_sec) + ((endtime.tv_nsec - starttime.tv_nsec)/1000000000.0));
+	printf("Render took: %lf seconds\n", rendertime);
 	writeimage(window1.resx, window1.resy, window1.colors, framebuffer);
 	
 	free(framebuffer);
