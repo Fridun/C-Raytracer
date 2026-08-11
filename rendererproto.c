@@ -234,15 +234,16 @@ return lightfactor;
 
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+array3 findcolor(float ray[], object target, collision lastcollision,float origin[], object objlist[], int objcount, int background, light lightlist[], int lightcount, int reflectionlimit, int reflectioncount);
 
-
-array3 reflect(float ray[], object target, float hitpoint[], object objlist[], int objcount, int background){
+array3 reflect(float ray[], object target, float hitpoint[], object objlist[], int objcount, int background, float cameraorigin[], light lightlist[], int lightcount, int reflectionlimit, int reflectioncount){
 	float flip[3] = {};
 	float reflectedray[3] = {};
 	float SNaligned = {}; //surface normal aligned
 	float surfacenormal[3] = {};
 	collision reflection = {};
 	array3 refcol = {};
+	reflectioncount += 1;
 	
 	switch(target.type){
 		
@@ -269,22 +270,38 @@ array3 reflect(float ray[], object target, float hitpoint[], object objlist[], i
 	vecplus(hitpoint, shifter, raystart);
 	
 	reflection = checkray(reflectedray, objlist, objcount, raystart);
+	//if (reflection.hit == 1){
+		//refcol.array[0] = objlist[reflection.target].col[0];
+		//refcol.array[1] = objlist[reflection.target].col[1];
+		//refcol.array[2] = objlist[reflection.target].col[2];
+	//}
+	//else{
+		//refcol.array[0] = background;
+		//refcol.array[1] = background;
+		//refcol.array[2] = background;
+	//}
+	
 	if (reflection.hit == 1){
-		refcol.array[0] = objlist[reflection.target].col[0];
-		refcol.array[1] = objlist[reflection.target].col[1];
-		refcol.array[2] = objlist[reflection.target].col[2];
+		//(float ray[], object target, collision lastcollision,float origin[3], object objlist[], int objcount, int background, light lightlist[], int lightcount)
+		refcol = findcolor(reflectedray, objlist[reflection.target], reflection, hitpoint, objlist, objcount, background, lightlist, lightcount, reflectionlimit, reflectioncount);
+		
 	}
+	
 	else{
 		refcol.array[0] = background;
 		refcol.array[1] = background;
 		refcol.array[2] = background;
 	}
+	//printf("hello");
+	
+	
+	
 	return refcol;
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-array3 findcolor(float ray[], object target, collision lastcollision,float origin[3], object objlist[], int objcount, int background, light lightlist[], int lightcount){
+array3 findcolor(float ray[], object target, collision lastcollision,float origin[], object objlist[], int objcount, int background, light lightlist[], int lightcount, int reflectionlimit, int reflectioncount){
 	array3 color = {};
 	array3 refcol = {};
 	
@@ -302,10 +319,10 @@ array3 findcolor(float ray[], object target, collision lastcollision,float origi
 		if(i==0){lightfactor = templight;}
 		else{lightfactor = lightfactor + templight;}
 	}
-	if (target.reflectivity != 0){
-		refcol = reflect(ray, objlist[lastcollision.target],hitpoint, objlist, objcount, background);
+	if (target.reflectivity != 0 && reflectioncount < reflectionlimit){
+		refcol = reflect(ray, objlist[lastcollision.target],hitpoint, objlist, objcount, background, origin, lightlist, lightcount, reflectionlimit, reflectioncount);
 	}
-	
+	//printf("hello");
 	color.array[0] = ((((1 - target.reflectivity) * target.col[0]) + (target.reflectivity * refcol.array[0]))*lightfactor);
 	color.array[1] = ((((1 - target.reflectivity) * target.col[1]) + (target.reflectivity * refcol.array[1]))*lightfactor);
 	color.array[2] = ((((1 - target.reflectivity) * target.col[2]) + (target.reflectivity * refcol.array[2]))*lightfactor);
@@ -349,6 +366,7 @@ void main(){
 	S1.shape.sphere.pos[1] = 0;
 	S1.shape.sphere.pos[2] = 10;
 	S1.shape.sphere.radius = 2;
+	S1.reflectivity = 0;
 	
 	object S2 = {};
 	S2.type = 1;
@@ -359,6 +377,7 @@ void main(){
 	S2.shape.sphere.pos[1] = 2;
 	S2.shape.sphere.pos[2] = 15;
 	S2.shape.sphere.radius = 2;
+	S2.reflectivity = 0.1;
 	
 	object S3 = {};
 	S3.type = 1;
@@ -369,6 +388,7 @@ void main(){
 	S3.shape.sphere.pos[1] = -2;
 	S3.shape.sphere.pos[2] = 8;
 	S3.shape.sphere.radius = 1;
+	S3.reflectivity = 0.1;
 	
 	object S4 = {};
 	S4.type = 1;
@@ -379,6 +399,7 @@ void main(){
 	S4.shape.sphere.pos[1] = 10;
 	S4.shape.sphere.pos[2] = 50;
 	S4.shape.sphere.radius = 3;
+	S4.reflectivity = 0.1;
 
 	object S5 = {};
 	S5.type = 1;
@@ -400,6 +421,7 @@ void main(){
 	S6.shape.sphere.pos[1] = 20;
 	S6.shape.sphere.pos[2] = 80;
 	S6.shape.sphere.radius = 10;
+	S6.reflectivity = 0.1;
 	
 	object P1 = {};
 	P1.type = 2;//plane
@@ -410,7 +432,7 @@ void main(){
 	P1.shape.plane.normal[1] = 1;
 	P1.shape.plane.normal[2] = 0;
 	P1.shape.plane.offset = -3.5;
-	P1.reflectivity = 1;
+	P1.reflectivity = 0.5;
 	
 	object P2 = {};  //not being used rn
 	P2.type = 2;//plane
@@ -448,6 +470,11 @@ void main(){
 	L2.pos[1] = 0;
 	L2.pos[2] = 5.5;
 	
+	light L3;
+	L3.pos[0] = 0;
+	L3.pos[1] = 0;
+	L3.pos[2] = 14;
+	
 	
 	//+++++++++++++ light list ++++++++++++++++++++++
 	
@@ -456,6 +483,7 @@ void main(){
 	
 	lightlist[0] = L1;
 	lightlist[1] = L2;
+	//lightlist[2] = L3;
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
 	Camera Camera1;
@@ -464,8 +492,8 @@ void main(){
 	Camera1.Winy = 1;
 
 	struct window window1;
-	window1.resx = 1000;
-	window1.resy = 1000;
+	window1.resx = 4000;
+	window1.resy = 4000;
 	window1.colors = 255;
 
 	int background = 255;
@@ -487,19 +515,19 @@ void main(){
 		
 		vecnormalize(ray);
 		
-		float origin[3] = {0,0,0};
+		float origin[3] = {0,0,-5};
 		hit = checkray(ray, objlist, objcount,origin);
 		
 		if (hit.hit == 1){ 
-
-			array3 color = findcolor(ray, objlist[hit.target], hit, origin, objlist, objcount, background, lightlist, lightcount);
+			int reflectioncount = 0;
+			array3 color = findcolor(ray, objlist[hit.target], hit, origin, objlist, objcount, background, lightlist, lightcount, reflectionlimit, reflectioncount);
 			framebuffer[l][0] = color.array[0];
 			framebuffer[l][1] = color.array[1];
 			framebuffer[l][2] = color.array[2];
-			}
+		}
 			
 		else{ for(int bac = 0; bac <= 2; bac++){ framebuffer[l][bac] = background; }}
-	}
+		}
 	
 	clock_gettime(CLOCK_MONOTONIC, &endtime);
 	double rendertime = ((endtime.tv_sec - starttime.tv_sec) + ((endtime.tv_nsec - starttime.tv_nsec)/1000000000.0));
