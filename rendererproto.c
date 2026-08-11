@@ -234,9 +234,9 @@ return lightfactor;
 
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-array3 findcolor(float ray[], object target, collision lastcollision,float origin[], object objlist[], int objcount, int background, light lightlist[], int lightcount, int reflectionlimit, int reflectioncount);
+array3 findcolor(float ray[], object target, collision lastcollision,float origin[], object objlist[], int objcount, int background[], light lightlist[], int lightcount, int reflectionlimit, int reflectioncount);
 
-array3 reflect(float ray[], object target, float hitpoint[], object objlist[], int objcount, int background, float cameraorigin[], light lightlist[], int lightcount, int reflectionlimit, int reflectioncount){
+array3 reflect(float ray[], object target, float hitpoint[], object objlist[], int objcount, int background[], float cameraorigin[], light lightlist[], int lightcount, int reflectionlimit, int reflectioncount){
 	float flip[3] = {};
 	float reflectedray[3] = {};
 	float SNaligned = {}; //surface normal aligned
@@ -256,6 +256,7 @@ array3 reflect(float ray[], object target, float hitpoint[], object objlist[], i
 		break;
 		
 	}
+	vecnormalize(surfacenormal);
 	
 	SNaligned = float_dotP(surfacenormal, ray);
 	
@@ -288,9 +289,9 @@ array3 reflect(float ray[], object target, float hitpoint[], object objlist[], i
 	}
 	
 	else{
-		refcol.array[0] = background;
-		refcol.array[1] = background;
-		refcol.array[2] = background;
+		refcol.array[0] = background[0];
+		refcol.array[1] = background[1];
+		refcol.array[2] = background[2];
 	}
 	//printf("hello");
 	
@@ -301,7 +302,7 @@ array3 reflect(float ray[], object target, float hitpoint[], object objlist[], i
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-array3 findcolor(float ray[], object target, collision lastcollision,float origin[], object objlist[], int objcount, int background, light lightlist[], int lightcount, int reflectionlimit, int reflectioncount){
+array3 findcolor(float ray[], object target, collision lastcollision,float origin[], object objlist[], int objcount, int background[], light lightlist[], int lightcount, int reflectionlimit, int reflectioncount){
 	array3 color = {};
 	array3 refcol = {};
 	
@@ -399,7 +400,7 @@ void main(){
 	S4.shape.sphere.pos[1] = 10;
 	S4.shape.sphere.pos[2] = 50;
 	S4.shape.sphere.radius = 3;
-	S4.reflectivity = 0.1;
+	S4.reflectivity = 0.2;
 
 	object S5 = {};
 	S5.type = 1;
@@ -425,14 +426,14 @@ void main(){
 	
 	object P1 = {};
 	P1.type = 2;//plane
-	P1.col[0] = 128;
-	P1.col[1] = 128;
-	P1.col[2] = 128;
+	P1.col[0] = 110;
+	P1.col[1] = 75;
+	P1.col[2] = 10;
 	P1.shape.plane.normal[0] = 0;
 	P1.shape.plane.normal[1] = 1;
 	P1.shape.plane.normal[2] = 0;
 	P1.shape.plane.offset = -3.5;
-	P1.reflectivity = 0.5;
+	P1.reflectivity = 0.3;
 	
 	object P2 = {};  //not being used rn
 	P2.type = 2;//plane
@@ -492,11 +493,11 @@ void main(){
 	Camera1.Winy = 1;
 
 	struct window window1;
-	window1.resx = 4000;
-	window1.resy = 4000;
+	window1.resx = 1000;
+	window1.resy = 1000;
 	window1.colors = 255;
 
-	int background = 255;
+	int background[3] = {135,206,251};
 	
 	int (*framebuffer)[3] = malloc(window1.resx * window1.resy * 3 * sizeof(int));
 	
@@ -526,7 +527,8 @@ void main(){
 			framebuffer[l][2] = color.array[2];
 		}
 			
-		else{ for(int bac = 0; bac <= 2; bac++){ framebuffer[l][bac] = background; }}
+		else{ for(int bac = 0; bac <= 2; bac++){ 
+			framebuffer[l][bac] = background[bac]; }}
 		}
 	
 	clock_gettime(CLOCK_MONOTONIC, &endtime);
