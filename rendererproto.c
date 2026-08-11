@@ -480,11 +480,11 @@ void main(){
 	//+++++++++++++ light list ++++++++++++++++++++++
 	
 	light lightlist[5];
-	int lightcount = 2;
+	int lightcount = 3;
 	
 	lightlist[0] = L1;
 	lightlist[1] = L2;
-	//lightlist[2] = L3;
+	lightlist[2] = L3;
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
 	Camera Camera1;
