@@ -12,14 +12,14 @@
 
 void main(){
 
-	int res[] = {100, 100};
+	int res[] = {720, 450};
 
 	uint32_t *renderimage = malloc(res[0] * res[1] * sizeof(uint32_t));
 
 	
 	
 //++++++++++++++++++++++
-	int scale = 10;
+	int scale = 4;
 	
 	int displayres[] = {res[0]*scale, res[1]*scale};
 

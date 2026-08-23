@@ -478,8 +478,8 @@ void render(uint32_t *framebuffer, int res[]){
 	
 	Camera Camera1;
 	Camera1.Depth = 1;
-	Camera1.Winx = 1;
 	Camera1.Winy = 1;
+	Camera1.Winx = res[0] / res[1];
 
 	struct window window1;
 	window1.resx = res[0];
