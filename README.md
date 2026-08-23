@@ -1,8 +1,10 @@
 I compile like this:
-gcc rendererproto.c -o renderer -lm
+gcc MAIN.c liverenderer.c Fenster.c -o <insert name> -lm -lX11
 
-Then run ./renderer 
+Then run ./<insert name>
 
-This will create a file called image.ppm that you can open in most image viewing programs
+This will open a window and display the rendered image. As of right now ive made my own little upscaling formula, so you can change the ratio of original to new pixels with the scale variable in MAIN.c . 
 
-I would recommend increasing the resolution if you want a nice looking image, although 1000x1000 is fine for debugging or editing the scene. But details in reflections can be invisible/very small, and all edges look kinda rough/pixely.
+As of right now you cant even notice that its updating the image live since nothing changes in the scene, but eventually there will be ways to interact with the scene.
+
+IMPORTANT: Since ive made the display library with X11, it obviously wont work unless thats what your pc is using.
