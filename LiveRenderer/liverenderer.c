@@ -303,7 +303,7 @@ array3 findcolor(float ray[], object target, collision lastcollision,float origi
 	
 
 void render(uint32_t *framebuffer, int res[]){
-	printf("1\n");
+
 	//+++++++++++++++++++++  ADD OBJECTS HERE +++++++++++++++++++++++++++++
 	object S1 = {};
 	S1.type = 1;
@@ -499,7 +499,6 @@ void render(uint32_t *framebuffer, int res[]){
 	struct timespec starttime, endtime;
 	clock_gettime(CLOCK_MONOTONIC, &starttime);
 	
-	printf("2\n");
 	for (int l = 0; l<(window1.resx*window1.resy); l++){
 		collision hit;
 		ray[1] = ((0.5 * Camera1.Winy) - ((float)Camera1.Winy / (window1.resy-1)) * (l/window1.resx));
@@ -521,8 +520,7 @@ void render(uint32_t *framebuffer, int res[]){
 			framebuffer[l] = ((background[0] << 16) + (background[1] << 8) + background[2]);
 		}
 	}
-	printf("3\n");
 	clock_gettime(CLOCK_MONOTONIC, &endtime);
 	double rendertime = ((endtime.tv_sec - starttime.tv_sec) + ((endtime.tv_nsec - starttime.tv_nsec)/1000000000.0));
-	printf("Render took: %lf seconds\n", rendertime);
+	//printf("Render took: %lf seconds\n", rendertime);
 }
